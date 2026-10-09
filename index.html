@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึก ค้นหา และแก้ไขข้อมูลการผลิต (Firebase Online)</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-dark: #0f172a;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Prompt', sans-serif;
+            color: var(--text-dark);
+            padding-top: 30px;
+            padding-bottom: 60px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+            background: var(--card-bg);
+            transition: all 0.3s ease;
+        }
+
+        .header-title {
+            color: var(--primary-color);
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.92rem;
+            margin-bottom: 8px;
+        }
+
+        .form-control {
+            border-radius: 12px;
+            padding: 12px 16px;
+            border: 1.5px solid #e2e8f0;
+            font-size: 0.98rem;
+            transition: all 0.2s ease;
+            background-color: #f8fafc;
+        }
+
+        .form-control:focus {
+            background-color: #ffffff;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+        }
+
+        .btn-custom-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            border: none;
+            color: white;
+            border-radius: 12px;
+            padding: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+            transition: all 0.2s ease;
+        }
+
+        .btn-custom-primary:hover {
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+        }
+
+        .table {
+            border-collapse: separate;
+            border-spacing: 0 10px;
+        }
+
+        .table thead th {
+            border: none;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 0.88rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 16px;
+        }
+
+        .table tbody tr {
+            background-color: #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+            border-radius: 14px;
+            transition: transform 0.2s ease;
+        }
+
+        .table tbody td {
+            padding: 16px;
+            border: none;
+            vertical-align: middle;
+        }
+
+        .table tbody tr td:first-child { border-radius: 14px 0 0 14px; }
+        .table tbody tr td:last-child { border-radius: 0 14px 14px 0; }
+
+        .badge-delivered {
+            background-color: #e0e7ff;
+            color: #3730a3;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .delivery-log-item {
+            background: #f8fafc;
+            border-left: 4px solid var(--primary-color);
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            border-radius: 0 12px 12px 0;
+            font-size: 0.88rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .edit-mode-active {
+            border: 2px solid #f59e0b !important;
+            background-color: #fffdf5 !important;
+        }
+
+        .modal-content {
+            border-radius: 24px;
+            border: none;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            border-bottom: none;
+            padding: 24px 24px 0 24px;
+        }
+
+        .modal-body {
+            padding: 20px 24px;
+        }
+
+        .modal-footer {
+            border-top: none;
+            padding: 0 24px 24px 24px;
+        }
+
+        .pin-input {
+            letter-spacing: 12px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            border-radius: 16px;
+        }
+
+        .reason-btn {
+            border: 1.5px solid #e2e8f0;
+            background-color: #f8fafc;
+            color: #334155;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: left;
+            transition: all 0.2s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .reason-btn:hover {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+            color: #dc2626;
+        }
+
+        .reason-btn.active {
+            border-color: #ef4444;
+            background-color: #ef4444;
+            color: #ffffff;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            
+            <!-- ฟอร์มบันทึกข้อมูล -->
+            <div class="card p-4 p-md-5 mb-4" id="formCard">
+                <h3 class="text-center header-title mb-4" id="formTitle">📦 ระบบบันทึกข้อมูลการผลิต</h3>
+                
+                <form id="dataForm">
+                    <input type="hidden" id="editLogIndex" value="-1">
+                    <input type="hidden" id="wasteReason" value="">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="productCode" class="form-label">รหัสสินค้า</label>
+                            <input type="text" class="form-control" id="productCode" placeholder="กรอกรหัสสินค้า เช่น 012662-62" value="" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="totalTarget" class="form-label">จำนวนงานทั้งหมด (ตัว/ชิ้น)</label>
+                            <input type="number" class="form-control" id="totalTarget" placeholder="ดึงค่าอัตโนมัติเมื่อพิมพ์รหัสเดิม" value="" min="1" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="deliverQty" class="form-label">จำนวนที่ส่งมอบรอบนี้ (ตัว/ชิ้น)</label>
+                            <input type="number" class="form-control" id="deliverQty" placeholder="กรอกจำนวนที่ส่ง เช่น 50 หรือ 49" value="" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="wasteQty" class="form-label">จำนวนของเสียรอบนี้ (ตัว/ชิ้น)</label>
+                            <input type="number" class="form-control" id="wasteQty" placeholder="กรอกของเสีย (ถ้าไม่มีไม่ต้องใส่)" value="" min="0">
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-custom-primary btn-lg w-100" id="submitBtn">บันทึกข้อมูลลงระบบออนไลน์</button>
+                        <button type="button" class="btn btn-secondary btn-lg d-none" id="cancelEditBtn">ยกเลิกการแก้ไข</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ส่วนตารางแสดงข้อมูล + ช่องค้นหา -->
+            <div class="card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                    <h5 class="m-0 fw-bold text-dark">📋 รายการบันทึกการผลิต (Cloud Database)</h5>
+                    <div>
+                        <input type="text" id="searchInput" class="form-control" placeholder="🔍 ค้นหารหัสสินค้า..." style="width: 260px;">
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table align-middle" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>รหัสสินค้า</th>
+                                <th class="text-center">เป้าหมายทั้งหมด</th>
+                                <th class="text-center">ส่งมอบสะสม</th>
+                                <th class="text-center">คงค้าง</th>
+                                <th class="text-center">เสียรวม</th>
+                                <th>ประวัติการส่งมอบ</th>
+                                <th class="text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr><td colspan="8" class="text-center text-muted py-4">กำลังโหลดข้อมูลจาก Firebase...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal แสดงรูปภาพ / index1.html ตรงกลางหน้าจอ -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content text-center p-3">
+            <div class="modal-header border-0 d-flex justify-content-between align-items-center pb-0">
+                <h5 class="modal-title fw-bold text-primary">🖼️ ดูรายละเอียดรูปภาพ (index1.html)</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3" id="imgModalCaption">แสดงรายละเอียดชิ้นงานเสีย</p>
+                <div class="border rounded-4 p-2 bg-light d-flex justify-content-center align-items-center" style="min-height: 250px;">
+                    <iframe id="imageIframe" src="index1.html" style="width: 100%; height: 350px; border: none; border-radius: 12px;"></iframe>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center border-0 gap-2">
+                <a href="index1.html" target="_blank" class="btn btn-outline-primary rounded-3 px-3">🔗 เปิดในหน้าต่างใหม่ (index1.html)</a>
+                <button type="button" class="btn btn-secondary rounded-3 px-4" data-bs-dismiss="modal">ปิด</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal เลือกสาเหตุงานเสีย -->
+<div class="modal fade" id="wasteReasonModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header d-flex justify-content-between align-items-center">
+                <h5 class="modal-title fw-bold text-danger m-0">⚠️ ระบุสาเหตุงานเสีย</h5>
+                <button type="button" class="btn-close" id="cancelWasteReasonBtn" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-start">
+                <p class="text-muted mb-3 small">กดเลือกสาเหตุงานเสีย หรือระบุเพิ่มเติมได้ทันที:</p>
+                
+                <div class="d-grid gap-2 mb-3">
+                    <button type="button" class="reason-btn" data-reason="ชิ้นงานเป็นรอย / ตำหนิ">
+                        <span>🔍 ชิ้นงานเป็นรอย / ตำหนิ</span>
+                    </button>
+                    <button type="button" class="reason-btn" data-reason="ขนาดไม่ได้มาตรฐาน / ตกสเปก">
+                        <span>📐 ขนาดไม่ได้มาตรฐาน / ตกสเปก</span>
+                    </button>
+                    <button type="button" class="reason-btn" data-reason="ชิ้นงานบุบ / บิดเบี้ยว">
+                        <span>🔨 ชิ้นงานบุบ / บิดเบี้ยว</span>
+                    </button>
+                    <button type="button" class="reason-btn" data-reason="วัตถุดิบมีปัญหา">
+                        <span>📦 วัตถุดิบมีปัญหา</span>
+                    </button>
+                </div>
+
+                <div>
+                    <label class="form-label small">ระบุรายละเอียดเพิ่มเติม / สาเหตุอื่นๆ:</label>
+                    <input type="text" id="reasonCustom" class="form-control" placeholder="เช่น รอยขูดขีดบริเวณขอบ">
+                </div>
+            </div>
+            <div class="modal-footer d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary rounded-3 px-3 w-50" id="closeWasteModalBtn">❌ ยกเลิก</button>
+                <button type="button" class="btn btn-danger rounded-3 px-3 w-50" id="saveReasonBtn">✅ ตกลง</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal สำหรับใส่รหัส PIN 6 หลัก -->
+<div class="modal fade" id="pinModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-dark" id="pinModalTitle">🔒 ยืนยันรหัสผ่าน</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="text-muted mb-3" id="pinModalSub">กรุณาใส่รหัสผ่าน 6 หลักเพื่อดำเนินการ</p>
+                <div class="mb-3">
+                    <input type="password" maxlength="6" id="pinInput" class="form-control pin-input" placeholder="••••••" autocomplete="off">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">ยกเลิก</button>
+                <button type="button" class="btn btn-primary rounded-3 px-4" id="confirmPinBtn">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal แสดงข้อความ Alert -->
+<div class="modal fade" id="alertModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center p-3">
+            <div class="modal-body">
+                <div class="fs-1 mb-2" id="alertIcon">⚠️</div>
+                <h5 class="fw-bold mb-2" id="alertTitle">แจ้งเตือน</h5>
+                <p class="text-muted mb-0" id="alertMessage">ข้อความแจ้งเตือน</p>
+            </div>
+            <div class="modal-footer justify-content-center border-0">
+                <button type="button" class="btn btn-primary rounded-3 px-4" data-bs-dismiss="modal">ตกลง</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Firebase SDK Module -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const SECRET_PIN = "606967";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBmv7p_YgeQEk1dyKeQgm2IQatC1KqqDfg",
+        authDomain: "naylin-10200599.firebaseapp.com",
+        projectId: "naylin-10200599",
+        storageBucket: "naylin-10200599.firebasestorage.app",
+        messagingSenderId: "34845411853",
+        appId: "1:34845411853:web:b6b1c0f26b67c6c6392344",
+        measurementId: "G-6VQVF7B1FG"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const recordsCol = collection(db, "production_records");
+
+    let records = [];
+    let pendingAction = null;
+    let selectedReasonBtnVal = "";
+
+    const pinModal = new bootstrap.Modal(document.getElementById('pinModal'));
+    const alertModal = new bootstrap.Modal(document.getElementById('alertModal'));
+    const wasteReasonModal = new bootstrap.Modal(document.getElementById('wasteReasonModal'));
+    const imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+
+    function showAlert(title, message, icon = "⚠️") {
+        document.getElementById('alertTitle').innerText = title;
+        document.getElementById('alertMessage').innerText = message;
+        document.getElementById('alertIcon').innerText = icon;
+        alertModal.show();
+    }
+
+    document.getElementById('wasteQty').addEventListener('change', checkWasteReason);
+
+    function checkWasteReason() {
+        const wasteQty = parseInt(document.getElementById('wasteQty').value) || 0;
+        if (wasteQty > 0) {
+            selectedReasonBtnVal = "";
+            document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('reasonCustom').value = '';
+            wasteReasonModal.show();
+        } else {
+            document.getElementById('wasteReason').value = '';
+        }
+    }
+
+    document.querySelectorAll('.reason-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            selectedReasonBtnVal = this.getAttribute('data-reason');
+        });
+    });
+
+    document.getElementById('saveReasonBtn').addEventListener('click', function() {
+        const customVal = document.getElementById('reasonCustom').value.trim();
+        let finalReason = selectedReasonBtnVal;
+
+        if (customVal) {
+            finalReason = finalReason ? `${finalReason} (${customVal})` : customVal;
+        }
+
+        if (!finalReason) {
+            alert("กรุณาเลือกสาเหตุหรือระบุรายละเอียดเพิ่มเติม");
+            return;
+        }
+
+        document.getElementById('wasteReason').value = finalReason;
+        wasteReasonModal.hide();
+    });
+
+    function cancelWasteReason() {
+        document.getElementById('wasteQty').value = '';
+        document.getElementById('wasteReason').value = '';
+        wasteReasonModal.hide();
+    }
+
+    document.getElementById('cancelWasteReasonBtn').addEventListener('click', cancelWasteReason);
+    document.getElementById('closeWasteModalBtn').addEventListener('click', cancelWasteReason);
+
+    // ดึงข้อมูล Realtime
+    onSnapshot(recordsCol, (snapshot) => {
+        records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+        filterAndRender(searchTerm);
+    }, (error) => {
+        console.error("Firestore Error:", error);
+        document.getElementById('tableBody').innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล (${error.message})</td></tr>`;
+    });
+
+    document.getElementById('productCode').addEventListener('input', function(e) {
+        if (document.getElementById('editLogIndex').value !== "-1") return;
+        const inputCode = e.target.value.trim().toLowerCase();
+        if (!inputCode) return;
+
+        const found = records.find(r => r && r.code && r.code.toLowerCase() === inputCode);
+        if (found && found.target) {
+            document.getElementById('totalTarget').value = found.target;
+        }
+    });
+
+    function renderTable(dataToDisplay) {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
+
+        if (dataToDisplay.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">ไม่พบข้อมูลรายการ</td></tr>`;
+            return;
+        }
+
+        dataToDisplay.forEach((item, index) => {
+            const logs = Array.isArray(item.logs) ? item.logs : [];
+            const target = item.target || 0;
+
+            const totalDelivered = logs.reduce((sum, log) => sum + (log.qty || 0), 0);
+            const totalWaste = logs.reduce((sum, log) => sum + (log.waste || 0), 0);
+            const remaining = Math.max(0, target - totalDelivered);
+
+            let logsHTML = logs.map((log, logIdx) => `
+                <div class="delivery-log-item">
+                    <div>
+                        <strong>+${log.qty} ตัว</strong> <span class="text-muted">(${log.time})</span>
+                        ${log.waste > 0 ? `<br><span class="text-danger small">✕ เสีย ${log.waste} ตัว [${log.reason || 'ไม่ได้ระบุสาเหตุ'}]</span>` : ''}
+                    </div>
+                    <div class="d-flex gap-1 align-items-center">
+                        <button class="btn btn-outline-primary btn-sm py-0 px-2 btn-view-image" data-code="${item.code}" style="font-size:0.75rem;" title="ดูรูปภาพ index1.html">🖼️</button>
+                        <button class="btn btn-warning btn-sm py-0 px-2 btn-edit-log" data-id="${item.id}" data-logidx="${logIdx}" style="font-size:0.75rem;">✏️ แก้ไข</button>
+                    </div>
+                </div>
+            `).join('');
+
+            if (logs.length === 0) {
+                logsHTML = `<span class="text-muted small">ยังไม่มีประวัติส่งมอบ</span>`;
+            }
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td><strong class="text-primary">${item.code}</strong></td>
+                <td class="text-center fw-bold">${target}</td>
+                <td class="text-center"><span class="badge-delivered">${totalDelivered}</span></td>
+                <td class="text-center text-warning fw-bold">${remaining}</td>
+                <td class="text-center text-danger fw-bold">${totalWaste}</td>
+                <td><div style="max-height: 150px; overflow-y: auto;">${logsHTML}</div></td>
+                <td class="text-center">
+                    <button class="btn btn-outline-danger btn-sm btn-delete" data-id="${item.id}" data-code="${item.code}">ลบทั้งหมด</button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        // ผูก Event ปุ่มกดดูรูปภาพ index1.html
+        document.querySelectorAll('.btn-view-image').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const code = this.getAttribute('data-code');
+                document.getElementById('imgModalCaption').innerText = `รายละเอียดชิ้นงานรหัส: ${code}`;
+                document.getElementById('imageIframe').src = "index1.html";
+                imageModal.show();
+            });
+        });
+
+        document.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const docId = this.getAttribute('data-id');
+                const code = this.getAttribute('data-code');
+                requestPinAuth('delete', { docId, code });
+            });
+        });
+
+        document.querySelectorAll('.btn-edit-log').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const docId = this.getAttribute('data-id');
+                const logIdx = parseInt(this.getAttribute('data-logidx'));
+                requestPinAuth('edit', { docId, logIdx });
+            });
+        });
+    }
+
+    function requestPinAuth(actionType, data) {
+        pendingAction = { type: actionType, data: data };
+        document.getElementById('pinInput').value = '';
+        document.getElementById('pinModalSub').innerText = actionType === 'delete' ? `กรุณากรอกรหัสผ่านเพื่อลบข้อมูลรหัส "${data.code}"` : 'กรุณากรอกรหัสผ่านเพื่อแก้ไขรายการส่งมอบ';
+        pinModal.show();
+    }
+
+    document.getElementById('confirmPinBtn').addEventListener('click', function() {
+        const inputPin = document.getElementById('pinInput').value.trim();
+        if (inputPin !== SECRET_PIN) {
+            showAlert("รหัสผ่านไม่ถูกต้อง", "ไม่สามารถดำเนินการได้ เนื่องจากรหัสผ่านไม่ถูกต้อง", "❌");
+            return;
+        }
+
+        pinModal.hide();
+
+        if (pendingAction) {
+            if (pendingAction.type === 'edit') {
+                executeEditLog(pendingAction.data.docId, pendingAction.data.logIdx);
+            } else if (pendingAction.type === 'delete') {
+                executeDeleteRecord(pendingAction.data.docId);
+            }
+            pendingAction = null;
+        }
+    });
+
+    function executeEditLog(docId, logIdx) {
+        const item = records.find(r => r.id === docId);
+        if (!item || !item.logs[logIdx]) return;
+
+        const targetLog = item.logs[logIdx];
+
+        document.getElementById('productCode').value = item.code;
+        document.getElementById('productCode').readOnly = true;
+        document.getElementById('totalTarget').value = item.target;
+        document.getElementById('deliverQty').value = targetLog.qty;
+        document.getElementById('wasteQty').value = targetLog.waste || 0;
+        document.getElementById('wasteReason').value = targetLog.reason || '';
+        document.getElementById('editLogIndex').value = logIdx;
+
+        document.getElementById('formTitle').innerText = "✏️ แก้ไขข้อมูลการส่งมอบ";
+        document.getElementById('submitBtn').innerText = "บันทึกการแก้ไข";
+        document.getElementById('submitBtn').classList.replace('btn-custom-primary', 'btn-warning');
+        document.getElementById('cancelEditBtn').classList.remove('d-none');
+        document.getElementById('formCard').classList.add('edit-mode-active');
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function executeDeleteRecord(docId) {
+        try {
+            await deleteDoc(doc(db, "production_records", docId));
+            showAlert("ลบข้อมูลสำเร็จ", "ทำการลบรายการเรียบร้อยแล้ว", "✅");
+        } catch (error) {
+            showAlert("เกิดข้อผิดพลาด", "ไม่สามารถลบข้อมูลได้: " + error.message, "❌");
+        }
+    }
+
+    // บันทึกข้อมูลลง Firebase
+    document.getElementById('dataForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const wasteQty = parseInt(document.getElementById('wasteQty').value) || 0;
+        const wasteReason = document.getElementById('wasteReason').value;
+
+        if (wasteQty > 0 && !wasteReason) {
+            wasteReasonModal.show();
+            return;
+        }
+
+        const code = document.getElementById('productCode').value.trim();
+        const target = parseInt(document.getElementById('totalTarget').value) || 0;
+        const deliverQty = parseInt(document.getElementById('deliverQty').value) || 0;
+        const editLogIndex = parseInt(document.getElementById('editLogIndex').value);
+        const time = new Date().toLocaleString('th-TH');
+
+        const docId = code.replace(/\//g, '_');
+        const docRef = doc(db, "production_records", docId);
+
+        try {
+            const docSnap = await getDoc(docRef);
+            let existingLogs = [];
+
+            if (docSnap.exists()) {
+                existingLogs = docSnap.data().logs || [];
+            }
+
+            if (editLogIndex !== -1 && existingLogs[editLogIndex]) {
+                existingLogs[editLogIndex] = {
+                    qty: deliverQty,
+                    waste: wasteQty,
+                    reason: wasteReason,
+                    time: existingLogs[editLogIndex].time + " (แก้ไขแล้ว)"
+                };
+            } else {
+                existingLogs.unshift({ qty: deliverQty, waste: wasteQty, reason: wasteReason, time: time });
+            }
+
+            await setDoc(docRef, {
+                code: code,
+                target: target,
+                logs: existingLogs,
+                updatedAt: new Date()
+            });
+
+            resetForm();
+            showAlert("บันทึกสำเร็จ", "ระบบทำการบันทึกข้อมูลเรียบร้อยแล้ว", "✅");
+        } catch (error) {
+            showAlert("เกิดข้อผิดพลาด", "ไม่สามารถบันทึกข้อมูลได้: " + error.message, "❌");
+        }
+    });
+
+    document.getElementById('cancelEditBtn').addEventListener('click', resetForm);
+
+    function resetForm() {
+        document.getElementById('productCode').value = '';
+        document.getElementById('productCode').readOnly = false;
+        document.getElementById('totalTarget').value = '';
+        document.getElementById('deliverQty').value = '';
+        document.getElementById('wasteQty').value = '';
+        document.getElementById('wasteReason').value = '';
+        document.getElementById('editLogIndex').value = '-1';
+
+        document.getElementById('formTitle').innerText = "📦 ระบบบันทึกข้อมูลการผลิต";
+        document.getElementById('submitBtn').innerText = "บันทึกข้อมูลลงระบบออนไลน์";
+        document.getElementById('submitBtn').classList.replace('btn-warning', 'btn-custom-primary');
+        document.getElementById('cancelEditBtn').classList.add('d-none');
+        document.getElementById('formCard').classList.remove('edit-mode-active');
+    }
+
+    function filterAndRender(searchTerm) {
+        const filtered = records.filter(item => item && item.code && item.code.toLowerCase().includes(searchTerm));
+        renderTable(filtered);
+    }
+
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+        filterAndRender(e.target.value.toLowerCase().trim());
+    });
+</script>
+
+</body>
+</html>
