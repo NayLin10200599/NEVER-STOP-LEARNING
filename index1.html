@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึกข้อมูลการผลิตและวัตถุดิบ</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts: Prompt & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            background-color: #09090b;
+            font-family: 'Prompt', sans-serif;
+            color: #0f172a;
+            padding-top: 20px;
+            padding-bottom: 140px;
+        }
+        .header-logo-container {
+            display: inline-block;
+            padding: 10px 30px;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 16px;
+            background: rgba(20, 20, 25, 0.9);
+        }
+        .header-logo {
+            max-height: 50px;
+            width: auto;
+            display: block;
+            margin: 0 auto;
+        }
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            background: #ffffff;
+        }
+        .thumb-preview {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            cursor: pointer;
+        }
+        .delivery-log-item {
+            background: #f8fafc;
+            border-left: 4px solid #6366f1;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            border-radius: 0 12px 12px 0;
+            font-size: 0.88rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* สำหรับควบคุมการซ่อน/แสดงหน้าจอแต่ละ Tab */
+        .app-page {
+            display: none;
+        }
+        .app-page.active-page {
+            display: block;
+        }
+
+        /* Liquid Navbar Styles */
+        .navbar-wrapper-fixed {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 1040;
+            gap: 10px;
+        }
+
+        .navbar-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: rgba(18, 18, 24, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 40px;
+            padding: 8px 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            width: 360px;
+            justify-content: space-between;
+        }
+
+        .nav-indicator {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 12px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--active-color, #00f2fe);
+            box-shadow: 0 0 25px var(--active-color, #00f2fe);
+            transition: left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.4s ease, box-shadow 0.4s ease;
+            z-index: 1;
+        }
+
+        .nav-item {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            z-index: 2;
+            outline: none;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+            color: #71717a;
+            transition: color 0.3s ease, transform 0.3s ease;
+        }
+
+        .nav-item.active i {
+            color: #09090b;
+            transform: scale(1.1);
+        }
+
+        .status-text {
+            font-size: 13px;
+            color: #a1a1aa;
+            letter-spacing: 1px;
+            font-family: 'Inter', sans-serif;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .status-text span {
+            color: #ffffff;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- ส่วนหัวข้อที่แก้ไขเป็นรูปภาพโลโก้ -->
+        <div class="text-center mb-4">
+            <div class="header-logo-container">
+                <img src="Screenshot_2026_1024_234704.png" alt="Profender Logo" class="header-logo">
+            </div>
+        </div>
+
+        <!-- กล่องข้อความแจ้งเตือน -->
+        <div id="alertMessage" class="alert alert-success d-none text-center fw-bold rounded-4 shadow-sm mb-3" role="alert">
+            ✅ บันทึกข้อมูลลงหน่วยความจำเครื่องเรียบร้อยแล้ว!
+        </div>
+
+        <!-- ================= PAGE 0: HOME (หน้าหลักบันทึกข้อมูลการผลิต) ================= -->
+        <div id="page-home" class="app-page active-page">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    
+                    <div class="card p-4 p-md-5 mb-4" id="formCard">
+                        <h3 class="text-center text-primary fw-bold mb-4" id="formTitle">📦 บันทึกข้อมูลการผลิต (ในเครื่อง)</h3>
+                        
+                        <form id="dataForm">
+                            <input type="hidden" id="editLogIndex" value="-1">
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="productCode" class="form-label fw-bold">รหัสสินค้า</label>
+                                    <input type="text" class="form-control" id="productCode" placeholder="พิมพ์รหัสสินค้า..." value="" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="totalTarget" class="form-label fw-bold">จำนวนงานทั้งหมด (เป้าหมาย)</label>
+                                    <input type="number" class="form-control" id="totalTarget" placeholder="" value="" min="1" required>
+                                    <small id="remainingHint" class="text-muted mt-1 d-block"></small>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="deliverQty" class="form-label fw-bold">จำนวนที่ส่งมอบรอบนี้</label>
+                                    <input type="number" class="form-control" id="deliverQty" placeholder="" value="" min="0" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="wasteQty" class="form-label fw-bold">จำนวนของเสียรอบนี้</label>
+                                    <input type="number" class="form-control" id="wasteQty" placeholder="" value="" min="0">
+                                </div>
+                            </div>
+
+                            <!-- ส่วนจัดการรูปภาพ -->
+                            <div class="mb-3">
+                                <label class="form-label text-danger fw-bold">📸 รูปภาพชิ้นงานเสีย (เลือกได้ไม่จำกัด):</label>
+                                <div class="d-flex align-items-center gap-2 flex-wrap mb-3" id="uploadedImagesContainer"></div>
+                                
+                                <input type="file" id="cameraInput" accept="image/*" multiple style="display: none;">
+
+                                <div>
+                                    <label for="cameraInput" class="btn btn-danger btn-sm rounded-3 m-0" style="cursor: pointer;">
+                                        <i class="fa-solid fa-camera"></i> 📷 เลือกรูปภาพ / ถ่ายรูปเพิ่ม
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-3">
+                                <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold" id="submitBtn">บันทึกข้อมูลลงหน่วยความจำเครื่อง</button>
+                                <button type="button" class="btn btn-secondary btn-lg d-none" id="cancelEditBtn">ยกเลิก</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ตารางแสดงข้อมูลการผลิต -->
+                    <div class="card p-4 mb-5">
+                        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                            <h5 class="m-0 fw-bold text-dark">📋 รายการบันทึกการผลิตในเครื่อง</h5>
+                            <input type="text" id="searchInput" class="form-control" placeholder="🔍 ค้นหารหัสสินค้า..." style="width: 260px;">
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table align-middle" id="dataTable">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>รหัสสินค้า</th>
+                                        <th class="text-center">เป้าหมาย</th>
+                                        <th class="text-center">ส่งมอบสะสม</th>
+                                        <th class="text-center">คงค้าง</th>
+                                        <th class="text-center">เสียรวม</th>
+                                        <th>ประวัติการส่งมอบ & รูปภาพ</th>
+                                        <th class="text-center">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableBody">
+                                    <tr><td colspan="8" class="text-center text-muted py-4">ยังไม่มีข้อมูลในเครื่อง</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PAGE 1: MATERIAL (หน้าวัตถุดิบ) ================= -->
+        <div id="page-material" class="app-page">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    
+                    <div class="card p-4 p-md-5 mb-4">
+                        <h3 class="text-center text-primary fw-bold mb-4">📦 จัดการวัตถุดิบ</h3>
+                        
+                        <form id="materialForm">
+                            <div class="mb-3">
+                                <label for="matCode" class="form-label fw-bold">รหัส</label>
+                                <input type="text" class="form-control" id="matCode" placeholder="พิมพ์รหัส เช่น 3109D41-BK" required>
+                                <small id="matStatusHint" class="text-success mt-1 d-block fw-bold"></small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="matName" class="form-label fw-bold">ชื่อผลิตภัณฑ์</label>
+                                <input type="text" class="form-control" id="matName" placeholder="ชื่อผลิตภัณฑ์จะแสดงอัตโนมัติ..." required>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="matQty" class="form-label fw-bold">จำนวนรับเข้า</label>
+                                    <input type="number" class="form-control" id="matQty" placeholder="ระบุจำนวน..." min="1" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="matDescription" class="form-label fw-bold">หมายเลขผลิตภัณฑ์</label>
+                                <input type="text" class="form-control" id="matDescription" placeholder="หมายเลขผลิตภัณฑ์จะแสดงอัตโนมัติ..." required>
+                            </div>
+
+                            <button type="submit" class="btn btn-success btn-lg w-100 fw-bold">💾 บันทึกข้อมูลวัตถุดิบ (จำไว้ตลอด)</button>
+                        </form>
+                    </div>
+
+                    <!-- ตารางแสดงรายการวัตถุดิบที่บันทึกไว้ -->
+                    <div class="card p-4 mb-5">
+                        <h5 class="m-0 fw-bold text-dark mb-3">📋 ประวัติและสถานะวัตถุดิบในเครื่อง</h5>
+                        <div class="table-responsive">
+                            <table class="table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>ชื่อผลิตภัณฑ์</th>
+                                        <th>รหัส</th>
+                                        <th class="text-center">จำนวนที่เหลือปัจจุบัน</th>
+                                        <th>หมายเลขผลิตภัณฑ์</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="materialTableBody">
+                                    <tr><td colspan="5" class="text-center text-muted py-4">ยังไม่มีข้อมูลวัตถุดิบ</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PAGE 2: OUT / TRANSFER (หน้าเบิกจ่าย) ================= -->
+        <div id="page-out" class="app-page">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="card p-4 p-md-5 mb-4">
+                        <h3 class="text-center text-danger fw-bold mb-4">🔄 เบิกจ่าย / นำวัตถุดิบไปประกอบ</h3>
+                        
+                        <form id="outForm">
+                            <div class="mb-3">
+                                <label for="outCode" class="form-label fw-bold">รหัสวัตถุดิบ</label>
+                                <input type="text" class="form-control" id="outCode" placeholder="พิมพ์รหัสวัตถุดิบ เช่น 3109D41-BK" required>
+                                <small id="outCodeHint" class="text-primary mt-1 d-block fw-bold"></small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="outName" class="form-label fw-bold">ชื่อผลิตภัณฑ์</label>
+                                <input type="text" class="form-control bg-light" id="outName" placeholder="ชื่อจะแสดงอัตโนมัติเมื่อพิมพ์รหัส..." readonly required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="outQty" class="form-label fw-bold">จำนวนที่นำไปประกอบ (ตัดสต็อกออก)</label>
+                                <input type="number" class="form-control" id="outQty" placeholder="ระบุจำนวนที่ใช้..." min="1" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="forProduct" class="form-label fw-bold text-success">เอาไปใช้สำหรับชื่อสินค้า / งานอะไร?</label>
+                                <input type="text" class="form-control" id="forProduct" placeholder="ระบุรหัสหรือชื่อสินค้าที่จะนำไปประกอบ..." required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="outDescription" class="form-label fw-bold">หมายเลขผลิตภัณฑ์</label>
+                                <input type="text" class="form-control bg-light" id="outDescription" placeholder="หมายเลขผลิตภัณฑ์จะแสดงอัตโนมัติ..." readonly required>
+                            </div>
+
+                            <button type="submit" class="btn btn-danger btn-lg w-100 fw-bold">📥 ยืนยันการเบิกจ่ายวัตถุดิบ</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PAGE 3: CHAT / ALERTS (หน้าแจ้งเตือนยอดรวมวัตถุดิบ) ================= -->
+        <div id="page-chat" class="app-page">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="card p-4 p-md-5 mb-4">
+                        <h3 class="text-center text-warning fw-bold mb-4">🔔 แจ้งเตือนยอดรวมวัตถุดิบในเครื่อง</h3>
+                        <div id="materialAlertContainer" class="list-group">
+                            <!-- รายการแจ้งเตือนยอดรวมจะแสดงที่นี่ -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PAGE 4: HISTORY / LOG (หน้าโปรไฟล์สีเขียว: แสดงรายชื่อวัตถุดิบ แล้วคลิกดูประวัติแยกตามรหัส) ================= -->
+        <div id="page-profile" class="app-page">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    
+                    <!-- ส่วนที่ 1: รายการวัตถุดิบหลัก (เช่น 3109D41-BK) -->
+                    <div id="historyMainView" class="card p-4 p-md-5 mb-4">
+                        <h3 class="text-center text-success fw-bold mb-4">📜 ประวัติการรับเข้า / เบิกจ่ายวัตถุดิบ</h3>
+                        <p class="text-center text-muted mb-4">เลือกวัตถุดิบเพื่อดูประวัติวันที่ เวลา และรายละเอียดการนำไปใช้</p>
+                        <div id="historyMaterialList" class="list-group">
+                            <!-- รายการวัตถุดิบจะแสดงที่นี่ -->
+                        </div>
+                    </div>
+
+                    <!-- ส่วนที่ 2: รายรายละเอียดประวัติย่อยของวัตถุดิบที่เลือก -->
+                    <div id="historyDetailView" class="card p-4 p-md-5 mb-4 d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="backToHistoryMain()">
+                                <i class="fa-solid fa-arrow-left"></i> กลับสู่หน้ารายการวัตถุดิบ
+                            </button>
+                            <h4 id="detailTitle" class="m-0 fw-bold text-success"></h4>
+                        </div>
+                        <div id="historyDetailList" class="list-group">
+                            <!-- ประวัติการรับเข้า / เบิกจ่าย พร้อมวันที่ เวลา และสินค้าที่เอาไปใช้ -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Liquid Navbar ด้านล่าง -->
+    <div class="navbar-wrapper-fixed">
+        <div class="navbar-container" id="navbar">
+            <div class="nav-indicator" id="indicator"></div>
+
+            <button class="nav-item active" data-target="page-home" data-color="#00f2fe" data-name="HOME">
+                <i class="fa-solid fa-house"></i>
+            </button>
+            <button class="nav-item" data-target="page-material" data-color="#a855f7" data-name="MATERIAL">
+                <i class="fa-solid fa-boxes-stacked"></i>
+            </button>
+            <button class="nav-item" data-target="page-out" data-color="#ec4899" data-name="OUT / TRANSFER">
+                <i class="fa-solid fa-arrow-right-arrow-left"></i>
+            </button>
+            <button class="nav-item" data-target="page-chat" data-color="#eab308" data-name="ALERTS">
+                <i class="fa-solid fa-comment"></i>
+            </button>
+            <button class="nav-item" data-target="page-profile" data-color="#22c55e" data-name="HISTORY">
+                <i class="fa-solid fa-user"></i>
+            </button>
+        </div>
+        <div class="status-text">Selected Section: <span id="sectionName">HOME</span></div>
+    </div>
+
+    <!-- Modal ดูรูปภาพขนาดใหญ่ -->
+    <div class="modal fade" id="viewImageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content text-center p-3">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-primary">🖼️ ดูรูปภาพชิ้นงานเสีย</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <img id="modalViewImg" class="img-fluid rounded-3" src="" alt="รูปภาพ" style="max-height: 450px;">
+                </div>
+                <div class="modal-footer justify-content-center border-0">
+                    <button type="button" class="btn btn-secondary rounded-3 px-4" data-bs-dismiss="modal">ปิด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const STORAGE_KEY = 'profender_production_v13';
+        const MATERIAL_KEY = 'profender_materials_v1';
+        let currentImages = []; 
+
+        const viewImageModal = new bootstrap.Modal(document.getElementById('viewImageModal'));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderFormImagePreviews();
+            loadAndRenderTable();
+            loadAndRenderMaterials();
+            loadAndRenderMaterialAlerts();
+            loadAndRenderHistoryMaterials();
+        });
+
+        function showNotification(message, isError = false) {
+            const alertBox = document.getElementById('alertMessage');
+            alertBox.className = isError ? "alert alert-danger text-center fw-bold rounded-4 shadow-sm mb-3" : "alert alert-success text-center fw-bold rounded-4 shadow-sm mb-3";
+            alertBox.innerHTML = message;
+            alertBox.classList.remove('d-none');
+            setTimeout(() => {
+                alertBox.classList.add('d-none');
+            }, 3000);
+        }
+
+        // ================= SCRIPTS จัดการวัตถุดิบ (หน้า Material) =================
+        document.getElementById('matCode').addEventListener('input', function() {
+            const code = this.value.trim();
+            const hint = document.getElementById('matStatusHint');
+            const nameInput = document.getElementById('matName');
+            const descInput = document.getElementById('matDescription');
+
+            if (!code) {
+                hint.textContent = '';
+                nameInput.value = '';
+                descInput.value = '';
+                return;
+            }
+
+            let materials = JSON.parse(localStorage.getItem(MATERIAL_KEY)) || [];
+            let foundMat = materials.find(m => m.code === code);
+
+            if (foundMat) {
+                nameInput.value = foundMat.name;
+                descInput.value = foundMat.description;
+                const totalIn = foundMat.logs.filter(l => l.type === 'IN').reduce((sum, l) => sum + (l.qty || 0), 0);
+                const totalOut = foundMat.logs.filter(l => l.type === 'OUT').reduce((sum, l) => sum + (l.qty || 0), 0);
+                const currentBalance = totalIn - totalOut;
+                hint.innerHTML = `✨ พบข้อมูลเดิม! ชื่อ: <b>${foundMat.name}</b> | คงเหลือปัจจุบัน: <b>${currentBalance}</b> ชิ้น`;
+            } else {
+                if (code === '3109D41-BK') {
+                    nameInput.value = 'หูโช้คสีดำ';
+                    descInput.value = 'EPXP-36-40-M32-70-131.5-M28CL-ER63/18D.';
+                } else {
+                    nameInput.value = '';
+                    descInput.value = '';
+                }
+                hint.textContent = '✨ รหัสวัตถุดิบใหม่ (บันทึกครั้งแรกจะจำไว้ตลอด)';
+            }
+        });
+
+        document.getElementById('materialForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('matName').value.trim();
+            const code = document.getElementById('matCode').value.trim();
+            const qty = parseInt(document.getElementById('matQty').value) || 0;
+            const description = document.getElementById('matDescription').value.trim();
+            const time = new Date().toLocaleString('th-TH');
+
+            try {
+                let materials = JSON.parse(localStorage.getItem(MATERIAL_KEY)) || [];
+                let existingMat = materials.find(m => m.code === code);
+
+                const logEntry = { 
+                    logId: 'log_' + Date.now(),
+                    type: 'IN', 
+                    qty: qty, 
+                    time: time, 
+                    forProduct: 'เติมเข้าสต็อกวัตถุดิบ' 
+                };
+
+                if (!existingMat) {
+                    existingMat = {
+                        id: 'mat_' + Date.now(),
+                        name: name,
+                        code: code,
+                        description: description,
+                        logs: [logEntry]
+                    };
+                    materials.unshift(existingMat);
+                } else {
+                    existingMat.name = name;
+                    existingMat.description = description;
+                    existingMat.logs.unshift(logEntry);
+                }
+
+                localStorage.setItem(MATERIAL_KEY, JSON.stringify(materials));
+                document.getElementById('matQty').value = '';
+                loadAndRenderMaterials();
+                loadAndRenderMaterialAlerts();
+                loadAndRenderHistoryMaterials();
+                showNotification("✅ บันทึกรับเข้าวัตถุดิบเรียบร้อยแล้ว!");
+            } catch (error) {
+                console.error(error);
+                showNotification("❌ บันทึกวัตถุดิบไม่สำเร็จ!", true);
+            }
+        });
+
+        // ================= SCRIPTS เบิกจ่ายวัตถุดิบ (หน้า OUT / TRANSFER) =================
+        document.getElementById('outCode').addEventListener('input', function() {
+            const code = this.value.trim();
+            const hint = document.getElementById('outCodeHint');
+            const nameInput = document.getElementById('outName');
+            const descInput = document.getElementById('outDescription');
+
+            if (!code) {
+                hint.textContent = '';
+                nameInput.value = '';
+                descInput.value = '';
+                return;
+            }
+
+            let materials = JSON.parse(localStorage.getItem(MATERIAL_KEY)) || [];
+            let foundMat = materials.find(m => m.code === code);
+
+            if (foundMat) {
+                nameInput.value = foundMat.name;
+                descInput.value = foundMat.description;
+
+                const totalIn = foundMat.logs.filter(l => l.type === 'IN').reduce((sum, l) => sum + (l.qty || 0), 0);
+                const totalOut = foundMat.logs.filter(l => l.type === 'OUT').reduce((sum, l) => sum + (l.qty || 0), 0);
+                const currentBalance = totalIn - totalOut;
+                
+                hint.innerHTML = `📦 คงเหลือปัจจุบันในคลัง: <span class="text-danger fw-bold">${currentBalance} ชิ้น</span>`;
+            } else {
+                if (code === '3109D41-BK') {
+                    nameInput.value = 'หูโช้คสีดำ';
+                    descInput.value = 'EPXP-36-40-M32-70-131.5-M28CL-ER63/18D.';
+                    hint.innerHTML = `<span class="text-muted">✨ ข้อมูลวัตถุดิบเริ่มต้น</span>`;
+                } else {
+                    nameInput.value = '';
+                    descInput.value = '';
+                    hint.innerHTML = `<span class="text-danger">❌ ไม่พบรหัสวัตถุดิบนี้ในระบบ</span>`;
+                }
+            }
+        });
+
+        document.getElementById('outForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const code = document.getElementById('outCode').value.trim();
+            const qty = parseInt(document.getElementById('outQty').value) || 0;
+            const name = document.getElementById('outName').value.trim();
+            const description = document.getElementById('outDescription').value.trim();
+            const forProduct = document.getElementById('forProduct').value.trim();
+            const time = new Date().toLocaleString('th-TH');
+
+            let materials = JSON.parse(localStorage.getItem(MATERIAL_KEY)) || [];
+            let existingMat = materials.find(m => m.code === code);
+
+            if (!existingMat) {
+                existingMat = {
+                    id: 'mat_' + Date.now(),
+                    name: name || 'วัตถุดิบ ' + code,
+                    code: code,
+                    description: description || '-',
+                    logs: []
+                };
+                materials.unshift(existingMat);
+            }
+
+            const totalIn = existingMat.logs.filter(l => l.type === 'IN').reduce((sum, l) => sum + (l.qty || 0), 0);
+            const totalOut = existingMat.logs.filter(l => l.type === 'OUT').reduce((sum, l) => sum + (l.qty || 0), 0);
+            const currentBalance = totalIn - totalOut;
+
+            if (qty > currentBalance && currentBalance > 0) {
+                showNotification(`❌ เบิกจ่ายไม่สำเร็จ! สต็อกเหลือเพียง ${currentBalance} ชิ้น`, true);
+                return;
+            }
+
+            const logEntry = { 
+                logId: 'log_' + Date.now(),
+                type: 'OUT', 
+                qty: qty, 
+                time: time, 
+                forProduct: forProduct 
+            };
+            existingMat.logs.unshift(logEntry);
+
+            localStorage.setItem(MATERIAL_KEY, JSON.stringify(materials));
+            document.getElementById('outCode').value = '';
+            document.getElementById('outQty').value = '';
+            document.getElementById('outName').value = '';
+            document.getElementById('outDescription').value = '';
+            document.getElementById('forProduct').value = '';
+            document.getElementById('outCodeHint').textContent = '';
+            
+            loadAndRenderMaterials();
+            loadAndRenderMaterialAlerts();
+            loadAndRenderHistoryMaterials();
+            showNotification(`✅ นำวัตถุดิบไปประกอบออก ${qty} ชิ้นเรียบร้อยแล้ว!`);
+        });
+
+        function loadAndRenderMaterials() {
+            const tbody = document.getElementById('materialTableBody');
+            tbody.innerHTML = '';
+
+            let materials = JSON.parse(localStorage.getItem(MATERIAL_KEY)) || [];
+
+            if (materials.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">ยังไม่มีข้อมูลวัตถุดิบ</td></tr>`;
+                return;
+            }
+
+            materials.forEach((mat, index) => {
+                const totalIn = mat.logs.filter(l => l.type === 'IN').reduce((sum, l) => sum + (l.qty || 0), 0);
+                const totalOut = mat.logs.filter(l => l.type === 'OUT').reduce((sum, l) => sum + (l.qty || 0), 0);
+                const currentBalance = totalIn - totalOut;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td><strong class="text-primary">${mat.name}</strong></td>
+                    <td><code>${mat.code}</code></td>
+                    <td class="text-center"><span class="badge bg-danger fs-6">${currentBalance} ชิ้น</span></td>
+                    <td><div class="small text-muted">หมายเลข: ${mat.description}</div></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // หน้าแจ้งเตือนยอดรวมวัตถุดิบ
+        function loadAndRenderMaterialAlerts() {
+            const container = document.getElementById('materialAlertContainer');
+            container.innerHTML = '';
+
+            let materials = JSON.parse(localStorage.getItem(MATERIAL_KEY)) || [];
+
+            if (materials.length === 0) {
+                container.innerHTML = `<div class="text-center text-muted py-4">ยังไม่มีข้อมูลการแจ้งเตือนวัตถุดิบ</div>`;
+                return;
+            }
+
+            materials.forEach((mat) => {
+                const totalIn = mat.logs.filter(l => l.type === 'IN').reduce((sum, l) => sum + (l.qty || 0), 0);
+                const totalOut = mat.logs.filter(l => l.type === 'OUT').reduce((sum, l) => sum + (l.qty || 0), 0);
+                const currentBalance = totalIn - totalOut;
+
+                const item = document.createElement('div');
+                item.className = 'list-group-item list-group-item-action p-3 p-md-4 mb-3 rounded-4 shadow-sm border-0 bg-light position-relative';
+                item.innerHTML = `
+                    <button type="button" class="btn btn-danger btn-sm rounded-circle position-absolute top-0 end-0 m-2 m-md-3" style="width: 28px; height: 28px; font-weight: bold; line-height: 1;" onclick="deleteMaterial('${mat.id}')" title="ลบรายการนี้">&times;</button>
+                    
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pe-4 mb-2">
+                        <h5 class="m-0 fw-bold text-dark">📦 ${mat.name}</h5>
+                        <span class="badge bg-primary text-white font-monospace" style="font-size: 0.85rem; padding: 6px 12px; border-radius: 20px;">
+                            ตอนนี้มีอยู่: <b>${currentBalance}</b> ชิ้น
+                        </span>
+                    </div>
+                    
+                    <div class="text-muted small">
+                        <div>รหัส: <code class="text-danger fw-bold">${mat.code}</code></div>
+                        <div class="mt-1">หมายเลขผลิตภัณฑ์: ${mat.description}</div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // ================= SCRIPTS หน้าประวัติ (แสดงรายการวัตถุดิบหลักก่อน แล้วคลิกดูประวัติ) =================
+        function loadAndRenderHistoryMaterials() {
+            const container = document.getElementById('historyMaterialList');
+            container.innerHTML = '';
+
+            let materials = JSON.parse(localStorage.getItem(MATERIAL_KEY)) || [];
+
+            if (materials.length === 0) {
+                container.innerHTML = `<div class="text-center text-muted py-4">ยังไม่มีข้อมูลวัตถุดิบในระบบ</div>`;
+                return;
+            }
+
+            materials.forEach((mat) => {
+                const totalIn = mat.logs.filter(l => l.type === 'IN').reduce((sum, l) => sum + (l.qty || 0), 0);
+                const totalOut = mat.logs.filter(l => l.type === 'OUT').reduce((sum, l) => sum + (l.qty || 0), 0);
+                const currentBalance = totalIn - totalOut;
+
+                const item = document.createElement('div');
+                item.className = 'list-group-item list-group-item-action p-3 p-md-4 mb-3 rounded-4 shadow-sm border-0 bg-light d-flex justify-content-between align-items-center';
+                item.style.cursor = 'pointer';
+                item.onclick = function() {
+                    showHistoryDetail(mat.id);
+                };
+                item.innerHTML = `
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1">📦 ${mat.name}</h5>
+                        <div class="text-muted small">รหัส: <code class="text-primary fw-bold">${mat.code}</code></div>
+                        <div class="text-muted small mt-1">หมายเลข: ${mat.description}</div>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-success fs-6 px-3 py-2">เหลือ: ${currentBalance} ชิ้น</span>
+                        <div class="text-primary small mt-2"><i class="fa-solid fa-clock-rotate-left"></i> คลิกดูประวัติ ➔</div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        window.showHistoryDetail = function(matId) {
+            let materials = JSON.parse(localStorage.getItem(MATERIAL_KEY)) || [];
+            let mat = materials.find(m => m.id === matId);
+            if (!mat) return;
+
+            document.getElementById('historyMainView').classList.add('d-none');
+            document.getElementById('historyDetailView').classList.remove('d-none');
+            document.getElementById('detailTitle').textContent = `📦 ${mat.name} (${mat.code})`;
+
+            const detailContainer = document.getElementById('historyDetailList');
+            detailContainer.innerHTML = '';
+
+            const logs = Array.isArray(mat.logs) ? mat.logs : [];
+
+            if (logs.length === 0) {
+                detailContainer.innerHTML = `<div class="text-center text-muted py-4">ยังไม่มีประวัติการรับเข้าหรือเบิกจ่าย</div>`;
+                return;
+            }
+
+            logs.forEach(log => {
+                const isOut = log.type === 'OUT';
+                const badgeBg = isOut ? 'bg-danger' : 'bg-success';
+                const typeText = isOut ? '📤 เบิกจ่ายนำไปประกอบ' : '📥 รับเข้าคลังวัตถุดิบ';
+
+                const item = document.createElement('div');
+                item.className = 'list-group-item p-3 mb-3 rounded-4 shadow-sm border-0 bg-light position-relative';
+                item.innerHTML = `
+                    <button type="button" class="btn btn-outline-danger btn-sm rounded-circle position-absolute top-0 end-0 m-2" style="width: 26px; height: 26px; font-weight: bold; line-height: 1;" onclick="deleteHistoryLog('${mat.id}', '${log.logId}')" title="ลบประวัตินี้">&times;</button>
+
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pe-4 mb-2">
+                        <span class="badge ${badgeBg} px-3 py-2 rounded-3">${typeText}</span>
+                        <span class="text-muted small fw-bold">🕒 วันที่-เวลา: ${log.time}</span>
+                    </div>
+
+                    <div class="fw-bold text-dark mt-2">จำนวน: <span class="${isOut ? 'text-danger' : 'text-success'} fs-5">${log.qty}</span> ชิ้น</div>
+                    
+                    ${isOut ? `<div class="mt-2 p-2 rounded-3 bg-white border border-danger-subtle"><span class="fw-bold text-danger">🛠️ เอาไปใช้สำหรับสินค้า:</span> <strong class="text-dark">${log.forProduct}</strong></div>` : ''}
+                `;
+                detailContainer.appendChild(item);
+            });
+        };
+
+        window.backToHistoryMain = function() {
+            document.getElementById('historyDetailView').classList.add('d-none');
+            document.getElementById('historyMainView').classList.remove('d-none');
+            loadAndRenderHistoryMaterials();
+        };
+
+        window.deleteHistoryLog = function(matId, logId) {
+            if (confirm("ต้องการลบประวัติรายการนี้ใช่หรือไม่? (การลบจะปรับยอดคงเหลือคืนให้อัตโนมัติ)")) {
+                let materials = JSON.parse(localStorage.getItem(MATERIAL_KEY)) || [];
+                let mat = materials.find(m => m.id === matId);
+                if (mat && Array.isArray(mat.logs)) {
+                    mat.logs = mat.logs.filter(l => l.logId !== logId);
+                    localStorage.setItem(MATERIAL_KEY, JSON.stringify(materials));
+                    loadAndRenderMaterials();
+                    loadAndRenderMaterialAlerts();
+                    showHistoryDetail(matId);
+                    showNotification("🗑️ ลบประวัติเรียบร้อยแล้ว");
+                }
+            }
+        };
+
+        window.deleteMaterial = function(id) {
+            if (confirm("ต้องการลบรายการวัตถุดิบนี้ใช่หรือไม่?")) {
+                let materials = JSON.parse(localStorage.getItem(MATERIAL_KEY)) || [];
+                materials = materials.filter(m => m.id !== id);
+                localStorage.setItem(MATERIAL_KEY, JSON.stringify(materials));
+                loadAndRenderMaterials();
+                loadAndRenderMaterialAlerts();
+                loadAndRenderHistoryMaterials();
+                showNotification("🗑️ ลบข้อมูลวัตถุดิบเรียบร้อยแล้ว");
+            }
+        };
+
+        // ================= SCRIPTS หน้าหลักผลิตเดิม =================
+        document.getElementById('productCode').addEventListener('input', function() {
+            const code = this.value.trim();
+            const targetInput = document.getElementById('totalTarget');
+            const hint = document.getElementById('remainingHint');
+
+            if (!code) {
+                targetInput.value = '';
+                targetInput.readOnly = false;
+                hint.textContent = '';
+                return;
+            }
+
+            let allRecords = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            let existingItem = allRecords.find(r => r.code === code);
+
+            if (existingItem) {
+                targetInput.value = existingItem.target;
+                targetInput.readOnly = true; 
+                
+                const logs = Array.isArray(existingItem.logs) ? existingItem.logs : [];
+                const totalDelivered = logs.reduce((sum, log) => sum + (log.qty || 0), 0);
+                const remaining = Math.max(0, existingItem.target - totalDelivered);
+
+                hint.innerHTML = `📌 เป้าหมาย: <b>${existingItem.target}</b> | ส่งมอบแล้ว: <b>${totalDelivered}</b> | <span class="text-danger">คงค้าง: <b>${remaining}</b> ตัว</span>`;
+            } else {
+                targetInput.value = '';
+                targetInput.readOnly = false;
+                hint.textContent = '✨ รหัสสินค้าใหม่ (กำหนดเป้าหมาย)';
+            }
+        });
+
+        const cameraInput = document.getElementById('cameraInput');
+        cameraInput.addEventListener('change', function(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        const MAX_HEIGHT = 800;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        currentImages.push(compressedDataUrl);
+                        renderFormImagePreviews();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+            cameraInput.value = ""; 
+        });
+
+        function renderFormImagePreviews() {
+            const container = document.getElementById('uploadedImagesContainer');
+            container.innerHTML = '';
+            
+            if (currentImages.length === 0) {
+                container.innerHTML = '<span class="text-muted small">ยังไม่มีรูปภาพแนบ</span>';
+                return;
+            }
+
+            currentImages.forEach((imgSrc, idx) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'position-relative d-inline-block';
+
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.className = 'thumb-preview';
+                img.title = `รูปที่ ${idx + 1}`;
+                
+                img.addEventListener('click', () => {
+                    document.getElementById('modalViewImg').src = imgSrc;
+                    viewImageModal.show();
+                });
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn btn-danger btn-sm rounded-circle position-absolute';
+                delBtn.style.cssText = 'top: -5px; right: -5px; width: 20px; height: 20px; font-size: 10px; line-height: 10px; padding: 0;';
+                delBtn.innerHTML = '&times;';
+                delBtn.onclick = function() {
+                    currentImages.splice(idx, 1);
+                    renderFormImagePreviews();
+                };
+
+                wrapper.appendChild(img);
+                wrapper.appendChild(delBtn);
+                container.appendChild(wrapper);
+            });
+        }
+
+        document.getElementById('dataForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const code = document.getElementById('productCode').value.trim();
+            const target = parseInt(document.getElementById('totalTarget').value) || 0;
+            const deliverQty = parseInt(document.getElementById('deliverQty').value) || 0;
+            const wasteQty = parseInt(document.getElementById('wasteQty').value) || 0;
+            const editLogIndex = parseInt(document.getElementById('editLogIndex').value);
+            const time = new Date().toLocaleString('th-TH');
+
+            try {
+                let allRecords = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+                let existingItem = allRecords.find(r => r.code === code);
+
+                const logData = {
+                    qty: deliverQty,
+                    waste: wasteQty,
+                    images: [...currentImages],
+                    time: time
+                };
+
+                if (!existingItem) {
+                    existingItem = { 
+                        id: 'id_' + Date.now(), 
+                        code: code, 
+                        target: target, 
+                        logs: [logData] 
+                    };
+                    allRecords.unshift(existingItem);
+                } else {
+                    if (editLogIndex !== -1 && existingItem.logs[editLogIndex]) {
+                        existingItem.logs[editLogIndex] = logData;
+                        document.getElementById('editLogIndex').value = '-1';
+                    } else {
+                        existingItem.logs.unshift(logData);
+                    }
+                    existingItem.target = target;
+                }
+
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(allRecords));
+                resetForm();
+                loadAndRenderTable();
+                showNotification("✅ บันทึกข้อมูลลงหน่วยความจำเครื่องเรียบร้อยแล้ว!");
+            } catch (error) {
+                console.error(error);
+                showNotification("❌ บันทึกไม่สำเร็จ! พื้นที่จัดเก็บในเครื่องเต็ม", true);
+            }
+        });
+
+        function loadAndRenderTable(filterText = "") {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            let allRecords = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            
+            if (filterText) {
+                allRecords = allRecords.filter(item => item.code.toLowerCase().includes(filterText.toLowerCase()));
+            }
+
+            if (allRecords.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">ยังไม่มีข้อมูลในเครื่อง</td></tr>`;
+                return;
+            }
+
+            allRecords.forEach((item, index) => {
+                const logs = Array.isArray(item.logs) ? item.logs : [];
+                const target = item.target || 0;
+
+                const totalDelivered = logs.reduce((sum, log) => sum + (log.qty || 0), 0);
+                const totalWaste = logs.reduce((sum, log) => sum + (log.waste || 0), 0);
+                const remaining = Math.max(0, target - totalDelivered);
+
+                let logsHTML = logs.map((log, logIdx) => {
+                    let imgBtns = '';
+                    if (log.images && log.images.length > 0) {
+                        imgBtns = log.images.map((imgSrc, imgI) => `
+                            <button class="btn btn-outline-primary btn-sm py-0 px-1" style="font-size:0.7rem;" onclick="viewImage('${encodeURIComponent(imgSrc)}')">🖼️ รูปที่ ${imgI + 1}</button>
+                        `).join(' ');
+                    }
+
+                    return `
+                        <div class="delivery-log-item">
+                            <div>
+                                <strong>+${log.qty} ตัว</strong> <span class="text-muted">(${log.time})</span>
+                                ${log.waste > 0 ? `<br><span class="text-danger small">✕ เสีย ${log.waste} ตัว</span>` : ''}
+                            </div>
+                            <div class="d-flex gap-1 align-items-center flex-wrap justify-content-end">
+                                ${imgBtns}
+                                <button class="btn btn-warning btn-sm py-0 px-2" style="font-size:0.75rem;" onclick="editLog('${item.id}', ${logIdx})">✏️ แก้ไข</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('') || `<span class="text-muted small">ยังไม่มีประวัติ</span>`;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td><strong class="text-primary">${item.code}</strong></td>
+                    <td class="text-center fw-bold">${target}</td>
+                    <td class="text-center"><span class="badge bg-secondary text-white">${totalDelivered}</span></td>
+                    <td class="text-center text-warning fw-bold">${remaining}</td>
+                    <td class="text-center text-danger fw-bold">${totalWaste}</td>
+                    <td><div style="max-height: 180px; overflow-y: auto;">${logsHTML}</div></td>
+                    <td class="text-center">
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteRecord('${item.id}')">ลบทั้งหมด</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        window.viewImage = function(encodedSrc) {
+            const imgSrc = decodeURIComponent(encodedSrc);
+            document.getElementById('modalViewImg').src = imgSrc;
+            viewImageModal.show();
+        };
+
+        window.deleteRecord = function(id) {
+            if (confirm("ต้องการลบข้อมูลรายการนี้ทั้งหมดใช่หรือไม่?")) {
+                let allRecords = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+                allRecords = allRecords.filter(r => r.id !== id);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(allRecords));
+                loadAndRenderTable();
+            }
+        };
+
+        window.editLog = function(id, logIdx) {
+            let allRecords = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            let item = allRecords.find(r => r.id === id);
+            if (!item || !item.logs[logIdx]) return;
+
+            let targetLog = item.logs[logIdx];
+
+            document.getElementById('productCode').value = item.code;
+            document.getElementById('productCode').readOnly = true;
+            document.getElementById('totalTarget').value = item.target;
+            document.getElementById('totalTarget').readOnly = false;
+            document.getElementById('deliverQty').value = targetLog.qty;
+            document.getElementById('wasteQty').value = targetLog.waste || 0;
+            
+            currentImages = targetLog.images ? [...targetLog.images] : [];
+            document.getElementById('editLogIndex').value = logIdx;
+
+            renderFormImagePreviews();
+            document.getElementById('formTitle').innerText = "✏️ แก้ไขข้อมูลการส่งมอบ";
+            document.getElementById('submitBtn').innerText = "บันทึกการแก้ไข";
+            document.getElementById('cancelEditBtn').classList.remove('d-none');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        document.getElementById('cancelEditBtn').addEventListener('click', resetForm);
+
+        function resetForm() {
+            document.getElementById('productCode').value = '';
+            document.getElementById('productCode').readOnly = false;
+            document.getElementById('totalTarget').value = '';
+            document.getElementById('totalTarget').readOnly = false;
+            document.getElementById('deliverQty').value = '';
+            document.getElementById('wasteQty').value = '';
+            document.getElementById('remainingHint').textContent = '';
+            document.getElementById('editLogIndex').value = '-1';
+            currentImages = [];
+            renderFormImagePreviews();
+
+            document.getElementById('formTitle').innerText = "📦 บันทึกข้อมูลการผลิต (ในเครื่อง)";
+            document.getElementById('submitBtn').innerText = "บันทึกข้อมูลลงหน่วยความจำเครื่อง";
+            document.getElementById('cancelEditBtn').classList.add('d-none');
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            loadAndRenderTable(e.target.value.trim());
+        });
+
+        // Script ควบคุมการเปลี่ยนหน้าจอ (Tab Switching) และ Liquid Navbar
+        const navItems = document.querySelectorAll('.nav-item');
+        const indicator = document.getElementById('indicator');
+        const sectionName = document.getElementById('sectionName');
+        const pages = document.querySelectorAll('.app-page');
+
+        navItems.forEach((item) => {
+            item.addEventListener('click', () => {
+                document.querySelector('.nav-item.active').classList.remove('active');
+                item.classList.add('active');
+
+                const itemLeft = item.offsetLeft;
+                const itemWidth = item.offsetWidth;
+                const indicatorWidth = indicator.offsetWidth;
+                const targetLeft = itemLeft + (itemWidth - indicatorWidth) / 2;
+                
+                const color = item.getAttribute('data-color');
+                const name = item.getAttribute('data-name');
+                const targetPageId = item.getAttribute('data-target');
+
+                indicator.style.left = `${targetLeft}px`;
+                indicator.style.setProperty('--active-color', color);
+                sectionName.textContent = name;
+                sectionName.style.color = color;
+
+                pages.forEach(page => {
+                    page.classList.remove('active-page');
+                });
+                document.getElementById(targetPageId).classList.add('active-page');
+
+                if (targetPageId === 'page-chat') {
+                    loadAndRenderMaterialAlerts();
+                } else if (targetPageId === 'page-profile') {
+                    backToHistoryMain();
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
